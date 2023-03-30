@@ -6,24 +6,29 @@ from jinja2 import Environment, FileSystemLoader
 app = Flask(__name__)
 
 ENVIRONMENT = Environment(loader=FileSystemLoader("templates/"))
-TEMPLATE = ENVIRONMENT.get_template("eds.jinja")
-
-OUTPUT_ENVOY_CONFIG_PATH = "/work/envoy-config/eds.yaml"
+TEMPLATE = ENVIRONMENT.get_template("destination-rule.jinja")
+OUTPUT_ENVOY_CONFIG_PATH = "/home/ubuntu/experiment-tools/configs/"
 
 @app.route("/")
 def hello():
-  endpoints_args = request.args["endpoints"]
-  endpoints = endpoints_args.split(",")
+  max_conn = request.args["max_conn"]
+  requests = request.args["requests"]
+  service = request.args["service"]
   
-  rendered_template = TEMPLATE.render(endpoints=endpoints)
 
-  write_results(rendered_template)
+  # Render the template
+  rendered_template = TEMPLATE.render(max_conn=max_conn, requests=requests, service=service)
+  write_results(service, rendered_template)
+
+  # Update Kubernetes
+  os.system('kubectl apply -f ' + OUTPUT_ENVOY_CONFIG_PATH )
 
   return rendered_template
 
+
 # writes first choice node and container name to results file
-def write_results(template):
-  tmp_output = "/tmp/fetcher-temp.yaml"
+def write_results(service, template):
+  tmp_output = "/tmp/{0}-destination-rule.yaml".format(service)
 
   f = open(tmp_output, "w")
   f.write(template)
