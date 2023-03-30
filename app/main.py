@@ -7,7 +7,8 @@ app = Flask(__name__)
 
 ENVIRONMENT = Environment(loader=FileSystemLoader("templates/"))
 TEMPLATE = ENVIRONMENT.get_template("destination-rule.jinja")
-OUTPUT_ENVOY_CONFIG_PATH = "/home/ubuntu/experiment-tools/configs/"
+EXPERIMENT_TOOLS_PATH = "/home/ubuntu/experiment-tools/"
+OUTPUT_ENVOY_CONFIG_PATH = EXPERIMENT_TOOLS_PATH + "config/"
 
 @app.route("/")
 def hello():
@@ -20,8 +21,12 @@ def hello():
   rendered_template = TEMPLATE.render(max_conn=max_conn, requests=requests, service=service)
   write_results(service, rendered_template)
 
-  # Update Kubernetes
-  os.system('kubectl apply -f ' + OUTPUT_ENVOY_CONFIG_PATH )
+  # # Update Kubernetes
+  # os.system('minikube kubectl -- apply -f ' + OUTPUT_ENVOY_CONFIG_PATH )
+
+  # Run Rescale Pods
+  # rescale does the destination rule updates
+  os.system("bash {0}/run-rescale.sh".format(EXPERIMENT_TOOLS_PATH))
 
   return rendered_template
 
